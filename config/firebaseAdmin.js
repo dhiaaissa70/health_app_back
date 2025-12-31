@@ -17,26 +17,40 @@ const initializeFirebase = () => {
     }
 
     try {
-        // Check if service account path is provided
-        const envPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+        let serviceAccount;
 
-        if (!envPath) {
-            logger.warn('⚠️  FIREBASE_SERVICE_ACCOUNT_PATH not set. Push notifications will be disabled.');
-            logger.info('To enable push notifications:');
-            logger.info('1. Create a Firebase project at https://console.firebase.google.com');
-            logger.info('2. Generate a service account key');
-            logger.info('3. Set FIREBASE_SERVICE_ACCOUNT_PATH in .env file');
-            return;
+        // 1. Check for JSON string in environment variables (Recommended for Render/Cloud)
+        if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+            try {
+                serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+                logger.info('Initializing Firebase using FIREBASE_SERVICE_ACCOUNT_JSON environment variable');
+            } catch (parseError) {
+                logger.error('❌ Error parsing FIREBASE_SERVICE_ACCOUNT_JSON:', parseError.message);
+            }
         }
 
-        // Resolve path relative to project root (CWD)
-        const serviceAccountPath = path.isAbsolute(envPath)
-            ? envPath
-            : path.resolve(process.cwd(), envPath);
+        // 2. Fallback to file path if JSON string is not available or failed to parse
+        if (!serviceAccount) {
+            const envPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
 
-        // Initialize Firebase Admin
-        const serviceAccount = require(serviceAccountPath);
+            if (!envPath) {
+                logger.warn('⚠️  Firebase credentials not found. Push notifications will be disabled.');
+                logger.info('To fix this on Render:');
+                logger.info('1. Copy the contents of your firebase-service-account.json');
+                logger.info('2. Add an environment variable named FIREBASE_SERVICE_ACCOUNT_JSON');
+                logger.info('3. Paste the file content as the value');
+                return;
+            }
 
+            // Resolve path relative to project root (CWD)
+            const serviceAccountPath = path.isAbsolute(envPath)
+                ? envPath
+                : path.resolve(process.cwd(), envPath);
+
+            serviceAccount = require(serviceAccountPath);
+        }
+
+        // Initialize Firebase Admin with the credentials found
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
         });
