@@ -9,7 +9,8 @@ const {
     updateFastingInstruction,
     deleteFastingInstruction,
     getPatientFastingInstructions,
-    toggleFastingInstructionStatus
+    toggleFastingInstructionStatus,
+    updatePatientPersonalNotes
 } = require('../controllers/fastingInstructionController');
 const { protect } = require('../middleware/auth');
 
@@ -31,5 +32,6 @@ router.route('/:id')
 
 // Additional routes
 router.patch('/:id/toggle', toggleFastingInstructionStatus);
+router.patch('/:id/personal-notes', updatePatientPersonalNotes);
 
 module.exports = router;

@@ -240,6 +240,51 @@ const toggleFastingInstructionStatus = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Update patient's personal notes
+// @route   PATCH /api/fasting-instructions/:id/personal-notes
+// @access  Private (Patient only - for their own instructions)
+const updatePatientPersonalNotes = asyncHandler(async (req, res) => {
+    const { personalNotes } = req.body;
+
+    // Validate that personalNotes is provided and is an array
+    if (!personalNotes || !Array.isArray(personalNotes)) {
+        return res.status(400).json({
+            success: false,
+            error: 'Personal notes must be provided as an array'
+        });
+    }
+
+    let fastingInstruction = await FastingInstruction.findById(req.params.id);
+
+    if (!fastingInstruction) {
+        return res.status(404).json({
+            success: false,
+            error: 'Fasting instruction not found'
+        });
+    }
+
+    // Check if patient is updating their own instruction
+    if (req.user.role === 'patient' && fastingInstruction.patient.toString() !== req.user.id) {
+        return res.status(403).json({
+            success: false,
+            error: 'You can only update your own fasting instructions'
+        });
+    }
+
+    // Update only the personal notes field
+    fastingInstruction.personalNotes = personalNotes;
+    await fastingInstruction.save();
+
+    // Populate and return updated instruction
+    await fastingInstruction.populate('patient', 'name email');
+    await fastingInstruction.populate('doctor', 'name email doctorInfo.specialization');
+
+    res.status(200).json({
+        success: true,
+        data: fastingInstruction
+    });
+});
+
 module.exports = {
     addFastingInstruction,
     getFastingInstructions,
@@ -247,5 +292,6 @@ module.exports = {
     updateFastingInstruction,
     deleteFastingInstruction,
     getPatientFastingInstructions,
-    toggleFastingInstructionStatus
+    toggleFastingInstructionStatus,
+    updatePatientPersonalNotes
 };
