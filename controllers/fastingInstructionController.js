@@ -20,7 +20,7 @@ const addFastingInstruction = asyncHandler(async (req, res) => {
     } = req.body;
 
     // Check if user is doctor or admin
-    if (req.user.role !== 'doctor' && req.user.role !== 'admin') {
+    if (req.user.role !== 'doctor' && req.user.role !== 'admin' && req.user.role !== 'patient') {
         return res.status(403).json({
             success: false,
             error: 'Only doctors and administrators can create fasting instructions'
